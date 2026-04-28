@@ -1,0 +1,3 @@
+[submodule "external/proto-diplomski"]
+	path = external/proto-diplomski
+	url = git@github.com:dbracic21-foi/proto-diplomski.git
