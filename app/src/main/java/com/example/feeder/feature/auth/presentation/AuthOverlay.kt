@@ -29,7 +29,7 @@ fun AuthOverlay (
     onForgotPasswordClick: () -> Unit,
     onGoogleSignInClick: () -> Unit,
     onLoginClick: (email: String, password: String) -> Unit,
-    onRegisterClick: (email: String, username: String, password: String) -> Unit
+    onRegisterClick: (email: String, username: String, password: String, OnSuccess: () -> Unit) -> Unit
 ) {
     var authMode by remember { mutableStateOf(AuthMode.LOGIN) }
     Box(
@@ -73,7 +73,11 @@ fun AuthOverlay (
 
                     AuthMode.REGISTER -> {
                         RegisterContent(
-                            onRegisterClick = onRegisterClick,
+                            onRegisterClick = { email, username, password ->
+                                onRegisterClick(email, username, password) {
+                                    authMode = AuthMode.LOGIN
+                                }
+                            },
                             onGoToLogin = { authMode = AuthMode.LOGIN }
                         )
                     }
