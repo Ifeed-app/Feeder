@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.runtime)
 
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("io.grpc:grpc-okhttp:1.68.1")
     implementation("io.grpc:grpc-protobuf-lite:1.68.1")
     implementation("io.grpc:grpc-stub:1.68.1")

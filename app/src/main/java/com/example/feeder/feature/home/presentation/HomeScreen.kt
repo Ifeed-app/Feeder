@@ -19,33 +19,34 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen() {
     val showAuthOverlay = remember { mutableStateOf(true) }
-    val scope = rememberCoroutineScope( )
-    val authRemoteDataSource = remember { AuthRemoteDataSource () }
-    var debugText by remember { mutableStateOf("Home / Feed screen") }
+    val scope = rememberCoroutineScope()
+    val authRemoteDataSource = remember { AuthRemoteDataSource() }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Text(
-            text = debugText,
+            text = "Home / Feed screen",
             modifier = Modifier.align(Alignment.Center)
         )
+
         if (showAuthOverlay.value) {
             AuthOverlay(
                 onCLose = { showAuthOverlay.value = false },
                 onForgotPasswordClick = {},
                 onGoogleSignInClick = {},
                 onLoginClick = { _, _ -> },
-                onRegisterClick = { email,username, password ->
+                onRegisterClick = { email, username, password, onSuccess, onError ->
                     scope.launch {
                         try {
-                            val response = authRemoteDataSource.signUp(
+                            authRemoteDataSource.signUp(
                                 email = email,
                                 username = username,
                                 password = password
                             )
-                            debugText = "Registered: ${response.userInfo.email}"
-                            showAuthOverlay.value = false
+
+                            onSuccess()
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            debugText = e.message ?: "Registered failed"
+                            onError(e.message ?: "Registration failed. Please try again.")
                         }
                     }
                 }
