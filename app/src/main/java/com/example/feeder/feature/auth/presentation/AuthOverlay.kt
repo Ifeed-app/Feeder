@@ -27,10 +27,18 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun AuthOverlay(
+    isLoading: Boolean,
+    loginValidationErrors: LoginValidationErrors,
+    registerValidationErrors: RegisterValidationErrors,
     onCLose: () -> Unit,
     onForgotPasswordClick: () -> Unit,
     onGoogleSignInClick: () -> Unit,
-    onLoginClick: (email: String, password: String) -> Unit,
+    onLoginClick: (
+        email: String,
+        password: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) -> Unit,
     onRegisterClick: (
         email: String,
         username: String,
@@ -44,6 +52,7 @@ fun AuthOverlay(
     var resultType by remember { mutableStateOf<AuthResultType?>(null) }
     var resultTitle by remember { mutableStateOf("") }
     var resultMessage by remember { mutableStateOf("") }
+    var closeOnSuccess by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -91,7 +100,7 @@ fun AuthOverlay(
                         title = resultTitle,
                         message = resultMessage,
                         buttonText = if (currentResultType == AuthResultType.SUCCESS) {
-                            "Go to sign in"
+                            if (closeOnSuccess) "Continue" else "Go to sign in"
                         } else {
                             "Try again"
                         },
@@ -100,12 +109,19 @@ fun AuthOverlay(
                                 resultType = null
                                 resultTitle = ""
                                 resultMessage = ""
-                                authMode = AuthMode.LOGIN
+
+                                if (closeOnSuccess) {
+                                    onCLose()
+                                } else {
+                                    authMode = AuthMode.LOGIN
+                                }
                             } else {
                                 resultType = null
                                 resultTitle = ""
                                 resultMessage = ""
                             }
+
+                            closeOnSuccess = false
                         }
                     )
                 } else {
@@ -114,8 +130,27 @@ fun AuthOverlay(
                             LoginContent(
                                 onForgotPasswordClick = onForgotPasswordClick,
                                 onGoogleSignInClick = onGoogleSignInClick,
-                                onLoginClick = onLoginClick,
-                                onGoToRegister = { authMode = AuthMode.REGISTER }
+                                onLoginClick = { email, password ->
+                                    onLoginClick(
+                                        email,
+                                        password,
+                                        {
+                                            closeOnSuccess = true
+                                            resultType = AuthResultType.SUCCESS
+                                            resultTitle = "Signed in"
+                                            resultMessage = "You have successfully signed in."
+                                        },
+                                        { errorMessage ->
+                                            resultType = AuthResultType.ERROR
+                                            resultTitle = "Sign in failed"
+                                            resultMessage = errorMessage
+                                        }
+                                    )
+                                },
+                                onGoToRegister = { authMode = AuthMode.REGISTER },
+                                isLoading = isLoading,
+                                emailError = loginValidationErrors.email,
+                                passwordError = loginValidationErrors.password
                             )
                         }
 
@@ -127,6 +162,7 @@ fun AuthOverlay(
                                         username,
                                         password,
                                         {
+                                            closeOnSuccess = false
                                             resultType = AuthResultType.SUCCESS
                                             resultTitle = "Account created"
                                             resultMessage = "Your account has been created successfully. You can now sign in."
@@ -138,7 +174,11 @@ fun AuthOverlay(
                                         }
                                     )
                                 },
-                                onGoToLogin = { authMode = AuthMode.LOGIN }
+                                onGoToLogin = { authMode = AuthMode.LOGIN },
+                                isLoading = isLoading,
+                                emailError = registerValidationErrors.email,
+                                usernameError = registerValidationErrors.username,
+                                passwordError = registerValidationErrors.password
                             )
                         }
                     }

@@ -2,6 +2,7 @@ package com.example.feeder.feature.auth.presentation
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -15,7 +16,11 @@ import androidx.compose.ui.Modifier
 @Composable
 fun RegisterContent(
     onRegisterClick: (email: String, username: String, password: String) -> Unit,
-    onGoToLogin: () -> Unit
+    onGoToLogin: () -> Unit,
+    isLoading: Boolean,
+    emailError: String?,
+    usernameError: String?,
+    passwordError: String?,
 ) {
     var email by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -46,9 +51,15 @@ fun RegisterContent(
 
     Button(
         onClick = { onRegisterClick(email, username, password) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        enabled = !isLoading
     ) {
-        Text("Create account")
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
+            Text("Create account")
+        }
+
     }
 
     TextButton(onClick = onGoToLogin) {

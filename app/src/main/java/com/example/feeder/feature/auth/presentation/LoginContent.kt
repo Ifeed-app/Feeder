@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.feeder.R
@@ -26,7 +27,10 @@ fun LoginContent (
     onForgotPasswordClick: () -> Unit,
     onGoogleSignInClick: () -> Unit,
     onLoginClick: (email: String, password: String) -> Unit,
-    onGoToRegister: () -> Unit
+    onGoToRegister: () -> Unit,
+    isLoading: Boolean,
+    emailError: String?,
+    passwordError: String?,
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -51,10 +55,17 @@ fun LoginContent (
     }
 
     Button (
-        onClick = {onLoginClick(email,password)},
+        onClick = {
+            onLoginClick(email,password)
+            },
+        enabled = !isLoading,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text("Sign in")
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else {
+            Text("Sign in")
+        }
     }
 
     GoogleSignInButton(

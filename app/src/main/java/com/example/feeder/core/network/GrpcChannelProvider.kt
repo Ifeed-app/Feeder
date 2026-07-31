@@ -5,8 +5,8 @@ import io.grpc.okhttp.OkHttpChannelBuilder
 import java.util.concurrent.TimeUnit
 
 object GrpcChannelProvider {
-    fun provideChannel(): ManagedChannel {
-        return OkHttpChannelBuilder.forAddress(GrpcConfig.HOST, GrpcConfig.PORT)
+    fun provideChannel(port: Int): ManagedChannel {
+        return OkHttpChannelBuilder.forAddress(GrpcConfig.HOST,port)
             .usePlaintext().build()
     }
 
