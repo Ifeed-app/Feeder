@@ -60,4 +60,11 @@ class AuthSessionManager(
     fun isSignedIn() : Boolean {
         return getSession() != null
     }
+
+    fun getAccessToken(): String? {
+        return prefs.getString(
+            "access_token",
+            null
+        )?.takeIf { it.isNotBlank() }
+    }
 }

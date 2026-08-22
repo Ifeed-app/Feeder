@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class LoginValidationErrors(
-    val email: String? = null,
+    val identifier: String? = null,
     val password: String? = null
 ) {
     val hasErrors: Boolean
-        get() = email != null || password != null
+        get() = identifier != null || password != null
 }
 
 data class RegisterValidationErrors(
@@ -53,21 +53,25 @@ class AuthViewModel (    private val authRemoteDataSource: AuthRemoteDataSource,
     }
 
     fun signIn(
-        email: String,
+        identifier: String,
         password: String,
         onSuccess: (AuthSession) -> Unit,
         onError: (String) -> Unit
     ) {
-        val normalizedEmail = email.trim()
-        if (!validateLoginForm(normalizedEmail, password)) {
+        val normalizedIdentifier = identifier.trim()
+
+        if (!validateLoginForm(normalizedIdentifier, password)) {
             return
         }
+
         if (_isLoading.value) return
+
         viewModelScope.launch {
             _isLoading.value = true
+
             try {
                 val response = authRemoteDataSource.signIn(
-                    email = normalizedEmail,
+                    identifier = normalizedIdentifier,
                     password = password
                 )
 
@@ -81,17 +85,30 @@ class AuthViewModel (    private val authRemoteDataSource: AuthRemoteDataSource,
 
                 sessionManager.saveSession(session)
                 _loginValidationErrors.value = LoginValidationErrors()
-                onSuccess(session)
-            } catch (exception: Exception) {
-                exception.printStackTrace()
 
-                onError(
-                    mapGrpcError(
-                        exception = exception,
-                        defaultMessage = "Sign in failed. Please try again!"
-                    )
-                )
-            } finally {
+                onSuccess(session)
+            }  catch (exception: Exception) {
+            exception.printStackTrace()
+
+            val statusException =
+                exception as? io.grpc.StatusException
+
+            val statusRuntimeException =
+                exception as? io.grpc.StatusRuntimeException
+
+            val status = statusException?.status
+                ?: statusRuntimeException?.status
+
+            println("SIGN IN CODE: ${status?.code}")
+            println("SIGN IN DESCRIPTION: ${status?.description}")
+            println("SIGN IN CAUSE: ${status?.cause}")
+
+            onError(
+                status?.description
+                    ?: exception.message
+                    ?: "Sign in failed"
+            )
+        } finally {
                 _isLoading.value = false
             }
         }
@@ -101,11 +118,21 @@ class AuthViewModel (    private val authRemoteDataSource: AuthRemoteDataSource,
         email: String,
         username: String,
         password: String,
+        birthYear: Int,
+        gender: String,
+        countryCode: String,
+        preferredLanguage: String,
+        interests: List<String>,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val normalizedEmail = email.trim()
+        val normalizedEmail = email.trim().lowercase()
         val normalizedUsername = username.trim()
+        val normalizedGender = gender.trim().uppercase()
+        val normalizedCountryCode = countryCode.trim().uppercase()
+        val normalizedPreferredLanguage =
+            preferredLanguage.trim().lowercase()
+
         if (!validateRegisterForm(
                 email = normalizedEmail,
                 username = normalizedUsername,
@@ -114,31 +141,42 @@ class AuthViewModel (    private val authRemoteDataSource: AuthRemoteDataSource,
         ) {
             return
         }
+
         if (_isLoading.value) return
+
         viewModelScope.launch {
             _isLoading.value = true
+
             try {
                 authRemoteDataSource.signUp(
                     email = normalizedEmail,
-                    username = username,
-                    password = password
+                    username = normalizedUsername,
+                    password = password,
+                    birthYear = birthYear,
+                    gender = normalizedGender,
+                    countryCode = normalizedCountryCode,
+                    preferredLanguage = normalizedPreferredLanguage,
+                    interests = interests
                 )
-                _registerValidationErrors.value = RegisterValidationErrors()
+
+                _registerValidationErrors.value =
+                    RegisterValidationErrors()
+
                 onSuccess()
             } catch (exception: Exception) {
                 exception.printStackTrace()
 
                 onError(
-                 mapGrpcError(
-                     exception = exception,
-                     defaultMessage = "Registration failed. Please try again!"
-                 )
+                    mapGrpcError(
+                        exception = exception,
+                        defaultMessage =
+                            "Registration failed. Please try again!"
+                    )
                 )
             } finally {
                 _isLoading.value = false
             }
         }
-
     }
 
     fun signOut() {
@@ -186,17 +224,41 @@ class AuthViewModel (    private val authRemoteDataSource: AuthRemoteDataSource,
     }
 
     private fun validateLoginForm(
-        email: String,
+        identifier: String,
         password: String
     ): Boolean {
-        val errors = LoginValidationErrors(
-            email = validateEmail(email),
-            password = validatePassword(password)
+        var hasErrors = false
+
+        val identifierError = when {
+            identifier.isBlank() -> {
+                hasErrors = true
+                "Enter your email or username"
+            }
+
+            identifier.contains("@") &&
+                    !android.util.Patterns.EMAIL_ADDRESS.matcher(identifier).matches() -> {
+                hasErrors = true
+                "Enter a valid email"
+            }
+
+            else -> null
+        }
+
+        val passwordError = when {
+            password.isBlank() -> {
+                hasErrors = true
+                "Enter your password"
+            }
+
+            else -> null
+        }
+
+        _loginValidationErrors.value = LoginValidationErrors(
+            identifier = identifierError,
+            password = passwordError
         )
 
-        _loginValidationErrors.value = errors
-
-        return !errors.hasErrors
+        return !hasErrors
     }
 
     private fun validateRegisterForm(

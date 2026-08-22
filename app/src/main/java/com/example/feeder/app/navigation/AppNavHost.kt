@@ -2,10 +2,8 @@ package com.example.feeder.app.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
-import androidx.navigation.PopUpToBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.feeder.feature.auth.presentation.AuthScreen
 import com.example.feeder.feature.home.presentation.HomeScreen
 import com.example.feeder.feature.splash.presentation.SplashScreen
 
@@ -27,10 +25,6 @@ fun AppNavHost(
                     }
                 }
             )
-        }
-
-        composable(Routes.AUTH) {
-            AuthScreen()
         }
 
         composable(Routes.HOME) {

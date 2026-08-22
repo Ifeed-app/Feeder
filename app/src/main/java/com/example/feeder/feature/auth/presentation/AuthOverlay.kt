@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -30,11 +31,11 @@ fun AuthOverlay(
     isLoading: Boolean,
     loginValidationErrors: LoginValidationErrors,
     registerValidationErrors: RegisterValidationErrors,
-    onCLose: () -> Unit,
+    onClose: () -> Unit,
     onForgotPasswordClick: () -> Unit,
     onGoogleSignInClick: () -> Unit,
     onLoginClick: (
-        email: String,
+        identifier: String,
         password: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
@@ -43,6 +44,11 @@ fun AuthOverlay(
         email: String,
         username: String,
         password: String,
+        birthYear: Int,
+        gender: String,
+        countryCode: String,
+        preferredLanguage: String,
+        selectedInterests: List<String>,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) -> Unit
@@ -57,37 +63,44 @@ fun AuthOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.45f))
+            .background(Color.Black.copy(alpha = 0.72f)),
+        contentAlignment = Alignment.Center
     ) {
         Surface(
             modifier = Modifier
-                .align(Alignment.Center)
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            shape = RoundedCornerShape(28.dp),
-            color = Color(0xFF111827).copy(alpha = 0.72f),
+                .padding(horizontal = 20.dp, vertical = 32.dp)
+                .heightIn(max = 760.dp),
+            shape = RoundedCornerShape(32.dp),
+            color = Color(0xFF111318),
             border = BorderStroke(
-                width = 1.5.dp,
-                color = Color.White.copy(alpha = 0.45f)
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.12f)
             ),
-            tonalElevation = 8.dp,
-            shadowElevation = 12.dp
+            shadowElevation = 24.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(
+                        start = 24.dp,
+                        end = 24.dp,
+                        top = 12.dp,
+                        bottom = 24.dp
+                    ),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    IconButton(onClick = onCLose) {
+                    IconButton(
+                        onClick = onClose
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = Color.White
+                            tint = Color.White.copy(alpha = 0.72f)
                         )
                     }
                 }
@@ -95,30 +108,34 @@ fun AuthOverlay(
                 val currentResultType = resultType
 
                 if (currentResultType != null) {
-                    AuthResultDialog (
+                    AuthResultDialog(
                         type = currentResultType,
                         title = resultTitle,
                         message = resultMessage,
-                        buttonText = if (currentResultType == AuthResultType.SUCCESS) {
-                            if (closeOnSuccess) "Continue" else "Go to sign in"
+                        buttonText = if (
+                            currentResultType == AuthResultType.SUCCESS
+                        ) {
+                            if (closeOnSuccess) {
+                                "Continue"
+                            } else {
+                                "Go to sign in"
+                            }
                         } else {
                             "Try again"
                         },
                         onDismiss = {
-                            if (currentResultType == AuthResultType.SUCCESS) {
-                                resultType = null
-                                resultTitle = ""
-                                resultMessage = ""
+                            resultType = null
+                            resultTitle = ""
+                            resultMessage = ""
 
+                            if (
+                                currentResultType == AuthResultType.SUCCESS
+                            ) {
                                 if (closeOnSuccess) {
-                                    onCLose()
+                                    onClose()
                                 } else {
                                     authMode = AuthMode.LOGIN
                                 }
-                            } else {
-                                resultType = null
-                                resultTitle = ""
-                                resultMessage = ""
                             }
 
                             closeOnSuccess = false
@@ -128,57 +145,96 @@ fun AuthOverlay(
                     when (authMode) {
                         AuthMode.LOGIN -> {
                             LoginContent(
-                                onForgotPasswordClick = onForgotPasswordClick,
-                                onGoogleSignInClick = onGoogleSignInClick,
-                                onLoginClick = { email, password ->
+                                onForgotPasswordClick =
+                                    onForgotPasswordClick,
+                                onGoogleSignInClick =
+                                    onGoogleSignInClick,
+                                onLoginClick = {
+                                        identifier,
+                                        password ->
+
                                     onLoginClick(
-                                        email,
+                                        identifier,
                                         password,
                                         {
                                             closeOnSuccess = true
-                                            resultType = AuthResultType.SUCCESS
+                                            resultType =
+                                                AuthResultType.SUCCESS
                                             resultTitle = "Signed in"
-                                            resultMessage = "You have successfully signed in."
+                                            resultMessage =
+                                                "You have successfully signed in."
                                         },
                                         { errorMessage ->
-                                            resultType = AuthResultType.ERROR
-                                            resultTitle = "Sign in failed"
-                                            resultMessage = errorMessage
+                                            resultType =
+                                                AuthResultType.ERROR
+                                            resultTitle =
+                                                "Sign in failed"
+                                            resultMessage =
+                                                errorMessage
                                         }
                                     )
                                 },
-                                onGoToRegister = { authMode = AuthMode.REGISTER },
+                                onGoToRegister = {
+                                    authMode = AuthMode.REGISTER
+                                },
                                 isLoading = isLoading,
-                                emailError = loginValidationErrors.email,
-                                passwordError = loginValidationErrors.password
+                                identifierError =
+                                    loginValidationErrors.identifier,
+                                passwordError =
+                                    loginValidationErrors.password
                             )
                         }
 
                         AuthMode.REGISTER -> {
                             RegisterContent(
-                                onRegisterClick = { email, username, password ->
+                                onRegisterClick = {
+                                        email,
+                                        username,
+                                        password,
+                                        birthYear,
+                                        gender,
+                                        countryCode,
+                                        preferredLanguage,
+                                        selectedInterests ->
+
                                     onRegisterClick(
                                         email,
                                         username,
                                         password,
+                                        birthYear,
+                                        gender,
+                                        countryCode,
+                                        preferredLanguage,
+                                        selectedInterests,
                                         {
                                             closeOnSuccess = false
-                                            resultType = AuthResultType.SUCCESS
-                                            resultTitle = "Account created"
-                                            resultMessage = "Your account has been created successfully. You can now sign in."
+                                            resultType =
+                                                AuthResultType.SUCCESS
+                                            resultTitle =
+                                                "Account created"
+                                            resultMessage =
+                                                "Your account has been created. Please verify your email before signing in."
                                         },
                                         { errorMessage ->
-                                            resultType = AuthResultType.ERROR
-                                            resultTitle = "Registration failed"
-                                            resultMessage = errorMessage
+                                            resultType =
+                                                AuthResultType.ERROR
+                                            resultTitle =
+                                                "Registration failed"
+                                            resultMessage =
+                                                errorMessage
                                         }
                                     )
                                 },
-                                onGoToLogin = { authMode = AuthMode.LOGIN },
+                                onGoToLogin = {
+                                    authMode = AuthMode.LOGIN
+                                },
                                 isLoading = isLoading,
-                                emailError = registerValidationErrors.email,
-                                usernameError = registerValidationErrors.username,
-                                passwordError = registerValidationErrors.password
+                                emailError =
+                                    registerValidationErrors.email,
+                                usernameError =
+                                    registerValidationErrors.username,
+                                passwordError =
+                                    registerValidationErrors.password
                             )
                         }
                     }

@@ -11,25 +11,35 @@ class AuthRemoteDataSource {
     private val stub = AuthServiceGrpcKt.AuthServiceCoroutineStub(channel)
 
     suspend fun signUp(
-        email : String,
-        username : String,
-        password : String
+        email: String,
+        username: String,
+        password: String,
+        birthYear: Int,
+        gender: String,
+        countryCode: String,
+        preferredLanguage: String,
+        interests: List<String>
     ) : Auth.SignUpResponse {
         val request = Auth.SignUpRequest.newBuilder()
-            .setEmail(email)
-            .setUsername(username)
+            .setEmail(email.trim().lowercase())
+            .setUsername(username.trim())
             .setPassword(password)
+            .setBirthYear(birthYear)
+            .setGender(gender)
+            .setCountryCode(countryCode)
+            .setPreferredLanguage(preferredLanguage)
+            .addAllInterests(interests)
             .build()
 
         return stub.signUp(request)
     }
 
     suspend fun signIn (
-        email: String,
+        identifier: String,
         password: String
     ) : Auth.SignInResponse {
         var request = Auth.SignInRequest.newBuilder()
-            .setEmail(email)
+            .setIdentifier(identifier.trim())
             .setPassword(password)
             .build()
         return stub.signIn(request)

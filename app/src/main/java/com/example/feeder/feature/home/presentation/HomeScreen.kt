@@ -1,5 +1,7 @@
 package com.example.feeder.feature.home.presentation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +28,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.feeder.core.network.GrpcChannelProvider
+import com.example.feeder.core.network.GrpcConfig
+import com.example.feeder.core.network.JwtClientInterceptor
 import com.example.feeder.data.remote.AuthRemoteDataSource
 import com.example.feeder.data.remote.ContentRemoteDataSource
 import com.example.feeder.feature.auth.data.AuthSessionManager
@@ -35,7 +40,11 @@ import com.example.feeder.feature.auth.presentation.AuthViewModelFactory
 import com.example.feeder.feature.feed.presentation.FeedContent
 import com.example.feeder.feature.feed.presentation.FeedViewModel
 import com.example.feeder.feature.feed.presentation.FeedViewModelFactory
+import com.example.feeder.feature.interaction.data.InteractionRemoteDataSource
+import com.example.feeder.feature.interaction.presentation.InteractionViewModel
+import com.example.feeder.feature.interaction.presentation.InteractionViewModelFactory
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
@@ -66,6 +75,38 @@ fun HomeScreen() {
     var selectedTab by remember {
         mutableStateOf(MainTab.HOME)
     }
+    val jwtInterceptor = remember {
+        JwtClientInterceptor {
+            sessionManager
+                .getSession()
+                ?.accessToken
+        }
+    }
+
+    val interactionChannel = remember {
+        GrpcChannelProvider.provideChannel(
+            GrpcConfig.INTERACTION_SERVICE_PORT,
+            jwtInterceptor
+        )
+    }
+
+    val interactionRemoteDataSource = remember {
+        InteractionRemoteDataSource(
+            channel = interactionChannel
+        )
+    }
+
+    val interactionViewModel: InteractionViewModel = viewModel(
+        factory = InteractionViewModelFactory(
+            interactionRemoteDataSource =
+                interactionRemoteDataSource,
+            userIdProvider = {
+                authViewModel
+                    .getCurrentSession()
+                    ?.userId
+            }
+        )
+    )
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -152,6 +193,7 @@ fun HomeScreen() {
                             FeedContent(
                                 videos = feedUiState.videos,
                                 isLoadingMore = feedUiState.isLoadingMore,
+                                interactionViewModel,
                                 onLoadMore = feedViewModel::loadMoreVideos
                             )
                         }
@@ -179,19 +221,19 @@ fun HomeScreen() {
                     isLoading = authIsLoading,
                     loginValidationErrors = loginValidationErrors,
                     registerValidationErrors = registerValidationErrors,
-                    onCLose = {
+                    onClose = {
                         showAuthOverlay = false
                     },
                     onForgotPasswordClick = {},
                     onGoogleSignInClick = {},
                     onLoginClick = {
-                            email,
+                            identifier,
                             password,
                             onSuccess,
                             onError ->
 
                         authViewModel.signIn(
-                            email = email,
+                            identifier = identifier ,
                             password = password,
                             onSuccess = { session ->
                                 currentSession = session
@@ -204,6 +246,11 @@ fun HomeScreen() {
                             email,
                             username,
                             password,
+                            birthYear,
+                            gender,
+                            countryCode,
+                            preferredLanguage,
+                            selectedInterests,
                             onSuccess,
                             onError ->
 
@@ -211,6 +258,11 @@ fun HomeScreen() {
                             email = email,
                             username = username,
                             password = password,
+                            birthYear = birthYear,
+                            gender = gender,
+                            countryCode = countryCode,
+                            preferredLanguage = preferredLanguage,
+                            interests = selectedInterests,
                             onSuccess = onSuccess,
                             onError = onError
                         )
