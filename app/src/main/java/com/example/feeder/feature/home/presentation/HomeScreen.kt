@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,7 @@ import com.example.feeder.feature.feed.presentation.FeedViewModelFactory
 import com.example.feeder.feature.interaction.data.InteractionRemoteDataSource
 import com.example.feeder.feature.interaction.presentation.InteractionViewModel
 import com.example.feeder.feature.interaction.presentation.InteractionViewModelFactory
+import com.example.feeder.data.remote.RecommendationRemoteDataSource
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -56,10 +58,19 @@ fun HomeScreen() {
             sessionManager = sessionManager
         )
     )
-    val contentRemoteDataSource = remember { ContentRemoteDataSource() }
+    val contentRemoteDataSource = remember {
+        ContentRemoteDataSource()
+    }
+
+    val recommendationRemoteDataSource = remember {
+        RecommendationRemoteDataSource()
+    }
+
     val feedViewModel: FeedViewModel = viewModel(
         factory = FeedViewModelFactory(
-            contentRemoteDataSource = contentRemoteDataSource
+            contentRemoteDataSource = contentRemoteDataSource,
+            recommendationRemoteDataSource = recommendationRemoteDataSource,
+            authSessionManager = sessionManager
         )
     )
     val authIsLoading by authViewModel.isLoading.collectAsState()
@@ -70,6 +81,11 @@ fun HomeScreen() {
     val feedUiState by feedViewModel.uiState.collectAsState()
     var currentSession by remember {
         mutableStateOf(authViewModel.getCurrentSession())
+    }
+    LaunchedEffect(currentSession?.userId) {
+        if (currentSession != null) {
+            feedViewModel.loadFeed()
+        }
     }
     var showAuthOverlay by remember { mutableStateOf(currentSession == null) }
     var selectedTab by remember {
@@ -193,8 +209,9 @@ fun HomeScreen() {
                             FeedContent(
                                 videos = feedUiState.videos,
                                 isLoadingMore = feedUiState.isLoadingMore,
-                                interactionViewModel,
-                                onLoadMore = feedViewModel::loadMoreVideos
+                                debugMessage =  feedUiState.debugMessage,
+                                interactionViewModel = interactionViewModel,
+                                onLoadMore = {}
                             )
                         }
                     }

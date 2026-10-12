@@ -84,36 +84,28 @@ class AuthViewModel (    private val authRemoteDataSource: AuthRemoteDataSource,
                 )
 
                 sessionManager.saveSession(session)
-                _loginValidationErrors.value = LoginValidationErrors()
+
+                _loginValidationErrors.value =
+                    LoginValidationErrors()
 
                 onSuccess(session)
-            }  catch (exception: Exception) {
-            exception.printStackTrace()
 
-            val statusException =
-                exception as? io.grpc.StatusException
+            } catch (exception: Exception) {
+                exception.printStackTrace()
 
-            val statusRuntimeException =
-                exception as? io.grpc.StatusRuntimeException
+                onError(
+                    mapGrpcError(
+                        exception = exception,
+                        defaultMessage =
+                            "Sign in failed. Please try again!"
+                    )
+                )
 
-            val status = statusException?.status
-                ?: statusRuntimeException?.status
-
-            println("SIGN IN CODE: ${status?.code}")
-            println("SIGN IN DESCRIPTION: ${status?.description}")
-            println("SIGN IN CAUSE: ${status?.cause}")
-
-            onError(
-                status?.description
-                    ?: exception.message
-                    ?: "Sign in failed"
-            )
-        } finally {
+            } finally {
                 _isLoading.value = false
             }
         }
     }
-
     fun signUp(
         email: String,
         username: String,

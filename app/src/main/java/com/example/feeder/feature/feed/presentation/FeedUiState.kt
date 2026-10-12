@@ -7,5 +7,6 @@ data class FeedUiState (
     val isLoadingMore: Boolean = false,
     val videos: List<FeedVideo> = emptyList(),
     val errorMessage: String? = null,
-    val hasMoreVideos: Boolean = true
+    val hasMoreVideos: Boolean = true,
+    val debugMessage: String? = null
 )

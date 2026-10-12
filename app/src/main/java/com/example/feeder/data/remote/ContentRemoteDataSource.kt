@@ -3,6 +3,8 @@ package com.example.feeder.data.remote
 import com.example.feeder.core.network.GrpcChannelProvider
 import com.example.feeder.core.network.GrpcConfig
 import com.example.feeder.proto.content.v1.ContentServiceGrpcKt
+import com.example.feeder.proto.content.v1.GetVideosByIdsRequest
+import com.example.feeder.proto.content.v1.GetVideosByIdsResponse
 import com.example.feeder.proto.content.v1.ListFeedVideosRequest
 import com.example.feeder.proto.content.v1.ListFeedVideosResponse
 
@@ -21,5 +23,17 @@ class ContentRemoteDataSource {
             .build()
 
         return stub.listFeedVideos(request)
+    }
+
+    suspend fun getVideosByIds(
+        videoIds: List<String>
+    ): GetVideosByIdsResponse {
+
+        val request = GetVideosByIdsRequest
+            .newBuilder()
+            .addAllVideoIds(videoIds)
+            .build()
+
+        return stub.getVideosByIds(request)
     }
 }

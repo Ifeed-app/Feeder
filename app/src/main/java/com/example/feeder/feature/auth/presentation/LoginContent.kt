@@ -36,7 +36,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.feeder.feature.auth.presentation.components.GoogleSignInButton
 
 private val AuthAccent = Color(0xFF7C5CFC)
 private val AuthText = Color(0xFFF8FAFC)
@@ -45,7 +44,6 @@ private val AuthMutedText = Color(0xFF9CA3AF)
 @Composable
 fun LoginContent(
     onForgotPasswordClick: () -> Unit,
-    onGoogleSignInClick: () -> Unit,
     onLoginClick: (
         identifier: String,
         password: String
@@ -207,10 +205,6 @@ fun LoginContent(
                 color = Color.White.copy(alpha = 0.12f)
             )
         }
-
-        GoogleSignInButton(
-            onClick = onGoogleSignInClick
-        )
 
         TextButton(
             onClick = onGoToRegister,

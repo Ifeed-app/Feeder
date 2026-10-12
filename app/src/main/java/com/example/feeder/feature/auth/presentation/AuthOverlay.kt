@@ -147,8 +147,6 @@ fun AuthOverlay(
                             LoginContent(
                                 onForgotPasswordClick =
                                     onForgotPasswordClick,
-                                onGoogleSignInClick =
-                                    onGoogleSignInClick,
                                 onLoginClick = {
                                         identifier,
                                         password ->

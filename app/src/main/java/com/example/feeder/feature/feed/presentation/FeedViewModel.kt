@@ -3,6 +3,8 @@ package com.example.feeder.feature.feed.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.feeder.data.remote.ContentRemoteDataSource
+import com.example.feeder.data.remote.RecommendationRemoteDataSource
+import com.example.feeder.feature.auth.data.AuthSessionManager
 import io.grpc.Status
 import io.grpc.StatusException
 import io.grpc.StatusRuntimeException
@@ -13,7 +15,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class FeedViewModel(
-    private val contentRemoteDataSource: ContentRemoteDataSource
+    private val contentRemoteDataSource: ContentRemoteDataSource,
+    private val recommendationRemoteDataSource: RecommendationRemoteDataSource,
+    private val authSessionManager: AuthSessionManager
 ) : ViewModel() {
 
     companion object {
@@ -45,23 +49,63 @@ class FeedViewModel(
             }
 
             try {
-                val response = contentRemoteDataSource.listFeedVideos(
-                    limit = PAGE_SIZE,
-                    offset = 0
-                )
+                val userId = authSessionManager.getUserId()
 
-                val videos = response.videosList
+                val videos = if (userId == null) {
 
-                currentOffset = videos.size
+                    _uiState.update {
+                        it.copy(
+                            debugMessage = "User not signed in random parameters"
+                        )
+                    }
+                    val response = contentRemoteDataSource.listFeedVideos(
+                        limit = PAGE_SIZE,
+                        offset = 0
+                    )
+
+                    currentOffset = response.videosList.size
+
+                    response.videosList
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            debugMessage = "Personalized feed - requesting recommendations"
+                        )
+                    }
+                    val recommendationResponse =
+                        recommendationRemoteDataSource.getRecommendations(
+                            userId = userId,
+                            limit = PAGE_SIZE
+                        )
+
+                    val videoIds = recommendationResponse.videosList
+                        .map { it.videoId }
+
+                    _uiState.update {
+                        it.copy(
+                            debugMessage = "ML recommendation • ${videoIds.size} videos selected"
+                        )
+                    }
+
+                    if (videoIds.isEmpty()) {
+                        emptyList()
+                    } else {
+                        contentRemoteDataSource
+                            .getVideosByIds(videoIds)
+                            .videosList
+                    }
+                }
 
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         videos = videos,
                         errorMessage = null,
-                        hasMoreVideos = videos.size == PAGE_SIZE
+                        hasMoreVideos = userId == null &&
+                                videos.size == PAGE_SIZE
                     )
                 }
+
             } catch (exception: Exception) {
                 exception.printStackTrace()
 
@@ -105,7 +149,7 @@ class FeedViewModel(
                         isLoadingMore = false,
                         videos = (state.videos + newVideos)
                             .distinctBy { video -> video.id },
-                        hasMoreVideos = newVideos.size == PAGE_SIZE
+                        hasMoreVideos = false
                     )
                 }
             } catch (exception: Exception) {
